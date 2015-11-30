@@ -1,0 +1,9 @@
+*.pyc
+*~
+*.o
+*.so
+*.bak
+*.os
+*.a
+*.ndb
+.svn

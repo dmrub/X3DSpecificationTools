@@ -1,0 +1,239 @@
+-- Overview --
+
+1. NodeDB Tools Installation
+2. Creating a Node Database File
+3. Printing NodeDB Informations
+4. Conversion
+5. Computing Differences
+6. Fixing
+7. RTSG2 Spec Syntax Notes
+
+-- 1. NodeDB Tools Installation --
+
+NodeDB tools allow to parse and process HTML versions of X3D Specification.
+All tools are written in Python and data are stored in pickle serialization
+format.
+
+All tools print integrated help information when --help parameter is specified.
+
+For running tools you will need recent 2.x version of Python (2.5 and 2.6 are tested).
+Python 3.x is not supported. Additionally you may install Graphviz tools when
+you want to create X3D hierarchy diagrams.
+
+Installation on Linux:
+
+Use package installer of your Linux distribution to install Python and Graphviz.
+
+Installation on Windows:
+
+1. Download and install latest Python 2.x from http://www.python.org/download/
+2. Download and install latest Graphviz package from http://www.graphviz.org/Download_windows.php
+3. Make both tools available on the PATH when this is not done by the installer (http://docs.python.org/faq/windows.html#how-do-i-run-a-python-program-under-windows)
+
+All usage examples in this manual are Linux-based but can be easily used on Windows:
+
+Linux console:
+
+> ./x3dspec2ndb.py -p /path/to/spec/ISO-IEC-FDIS-19775-1.2 > x3d_2.ndb
+
+Windows cmd.exe prompt:
+
+> python .\x3dspec2ndb.py -p c:\path\to\spec\ISO-IEC-FDIS-19775-1.2 > x3d_2.ndb
+
+-- 2. Creating a Node Database File --
+
+For creating a node database (*.ndb) from specification run  ./x3dspec2ndb.py :
+
+> ./x3dspec2ndb.py -p ~/Documents/ISO-IEC-FDIS-19775-1.2 > x3d_2.ndb
+
+for the second spec. edition or also
+
+> ./x3dspec2ndb.py -p ~/Documents/X3DPublicSpecifications/ISO-IEC-19775-X3DAbstractSpecification  > x3d_1.ndb
+
+for the first spec. edition.
+
+Without -p option contents of the parsed database will be printed in human
+readable format to stdout.
+
+With -e option parsing errors will be reported.
+
+
+-- 3. Printing NodeDB Informations --
+
+With the ndbinfo.py informations about node database can be printed:
+
+> ./ndbinfo.py x3d_2.ndb
+
+NodeDB file: x3d_2.ndb
+215 concrete nodes
+64 abstract nodes
+279 nodes in total
+
+More information can be printed with -i option, also output can be restricted
+to a number of specific nodes with -n option:
+
+ ./ndbinfo.py -i -n MovieTexture x3d_2.ndb
+NodeDB file: x3d_2.ndb
+215 concrete nodes
+64 abstract nodes
+279 nodes in total
+=== MovieTexture ===
+SFString [in,out] description       ""                         declared in X3DSoundSourceNode
+SFBool   [in,out] loop              FALSE                      declared in X3DTimeDependentNode
+SFNode   [in,out] metadata          NULL  [X3DMetadataObject]  declared in X3DNode,X3DNode
+SFTime   [in,out] pauseTime         0     # (-inf,inf)         declared in X3DTimeDependentNode
+SFTime   [in,out] resumeTime        0     # (-inf,inf)         declared in X3DTimeDependentNode
+SFFloat  [in,out] speed             1.0   # (-inf,inf)         declared in MovieTexture
+SFTime   [in,out] startTime         0     # (-inf,inf)         declared in X3DTimeDependentNode
+SFTime   [in,out] stopTime          0     # (-inf,inf)         declared in X3DTimeDependentNode
+MFString [in,out] url               []    # [URI]              declared in X3DUrlObject
+SFTime   [out]    duration_changed                             declared in X3DSoundSourceNode
+SFTime   [out]    elapsedTime                                  declared in X3DTimeDependentNode
+SFBool   [out]    isActive                                     declared in X3DTimeDependentNode
+SFBool   [out]    isPaused                                     declared in X3DTimeDependentNode
+SFBool   []       repeatS           TRUE                       declared in X3DTexture2DNode
+SFBool   []       repeatT           TRUE                       declared in X3DTexture2DNode
+SFNode   []       textureProperties NULL  [TextureProperties]  declared in X3DTexture2DNode
+
+Specification consistency checks are done when -c option is specified:
+
+./ndbinfo.py -c -n MovieTexture x3d_2.ndb
+NodeDB file: x3d_2.ndb
+215 concrete nodes
+64 abstract nodes
+279 nodes in total
+=== Errors in node MovieTexture ===
+Field pitch declared in the node "X3DSoundSourceNode" is not declared in node "MovieTexture"
+
+-- 4. Conversion --
+
+NodeDB can be converted into multiple formats:
+
+Graphviz DOT:                     : ndb2dot.py
+JSON (JavaScript Object Notation) : ndb2json.py
+XML                               : ndb2xml.py
+C++ Datastructures                : ndb2cpp.py
+Python Representation             : ndb2py.py
+
+- 4.1 Graphviz DOT -
+
+ndb2dot.py tool generates graphs in Graphviz DOT format
+(http://www.graphviz.org/) that can be converted to PNG, SVG, PS, and many
+other formats. You can also restrict exported graph to include only subset of
+node types stored in the specification database.
+
+Making a graph from MovieTexture and its ancestors and converting it into
+PNG format:
+
+> ./ndb2dot.py -n MovieTexture x3d_2.ndb > MovieTexture.dot
+> dot -Tpng MovieTexture.dot -o MovieTexture.png
+
+For producing hierarchy graphs from all or a subset of X3D nodes make_node_diagrams.py
+tool can be used:
+
+Create from all nodes in the specification diagram images in the PNG format
+and store them to the ..\images directory:
+
+> make_node_diagrams.py -d ..\images -f png x3d_3.2.ndb
+
+Create diagram image from MovieTexture node in SVG format and store them
+to the ..\images directory:
+
+> make_node_diagrams.py -d ..\images -n MovieTexture -f svg x3d_3.2.ndb
+
+-- 5. Computing Differences --
+
+With ndbdiff.py tool differences between two node type databases can
+be printed in format similiar to diff tool:
+
+ ./ndbdiff.py x3d_1.ndb x3d_2.ndb
+--- x3d_1.ndb
++++ x3d_2.ndb
+
+@@ node GeoCoordinate @@
+- field MFVec3d [in,out] point []
++ field MFVec3d [in,out] point [] # (-inf,inf)
+
+@@ node PointSet @@
++ field MFNode [in,out] attrib [] [X3DVertexAttributeNode]
++ field SFNode [in,out] fogCoord
+
+...
+
+-- 6. Fixing --
+
+x3dfix.py tool fixes bugs in the second version of the X3D specification.
+
+e.g.:
+
+./x3dfix.py < x3d_2.ndb > x3d_2fix.ndb
+
+You can check what was fixed by running ndbdiff.py :
+
+./ndbdiff.py x3d_2.ndb x3d_2fix.ndb
+
+-- 7. RTSG2 Spec Syntax Notes --
+
+Annotations: notes for a specific field annotated behind it
+  syntax: # @annot1(value1,value2,...) @annot2
+
+  @enum(enum_name,...), e.g. @enum(triangles, triangleStrips, lines, lineStrips)
+    enumerations. The value of each enumeration name is an integer, starting at zero with the
+    first name, one for the second aso.
+    IMPORTANT: only SF/MFInt* field should be enums
+
+  @encodingId(id_number), e.g. @encodingId(5)
+    id for a field used in binary encoding/decoding
+    in c++: additional variable in NodeDef
+
+  @isReference
+    whether current field actually just holds a reference to another node
+    in c++: additional variable in FieldDef
+
+  @isContainment
+    the field that holds children containers in a xml graph, i.e.
+    an attribute of an element, that can directly hold children elements.
+    in c++: additional variable in FieldDef
+
+  @isMixedContent
+    somehow a kind of containment. this kind of field does not hold children containers,
+    though, but a children textnode (i.e. character data) that is important for us, e.g. float arrays
+    or the content of a script.
+    in c++: additional variable in FieldDef
+
+  @isResource
+    whether that holds a link for a resource to be loaded (e.g. image's src field)
+    in c++: additional variable in FieldDef
+
+  @dontCreate
+    whether field will not be created in the node instance
+    in C++: additional variable in FieldDef
+
+  @isNodeName
+    the field must be of type SFString and its contents will be used to
+    set node name in the execution context of the node:
+    node->getExecutionContext()->updateNamedNode(name, node)
+    When used without @dontCreate attribute the name will also be set
+    in the node field.
+
+  @replaceNodeWithReference
+    like @isReference but instead of a new node the referenced node
+    will be inserted again.
+    in C++: additional variable in FieldDef
+
+Attributes: notes for a node written as attributes in the field declaration body of a node
+
+  attribute abstract TRUE|FALSE
+    specify if the node type can be instantiated
+
+  attribute externalDefinition TRUE|FALSE
+    specify if the node defined in the another node definition file.
+    Note that when creating node database with C++ specifications
+    externally defined node types need to be fully defined before
+    they are used.
+
+  attribute auxTypeName "myauxtypename", e.g. attribute auxTypeName "xml3d"
+    holds a type name of a node for another context of use, e.g. an xml tag name
+
+  attribute encodingId myId, e.g. attribute encodingId 14
+    defines the id of the node used during binary encoding/decoding

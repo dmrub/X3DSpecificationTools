@@ -1,0 +1,143 @@
+-- Spec ISO/IEC 19775-1:2004 --
+
+* 15.4.2 Text (Text component)
+
+  typo in the fontStyle field:
+
+  SFNode   [in,out] fontStyle NULL  [X3FontSyleNode]
+
+  X3DFontStyleNode should be instead of X3FontSyleNode.
+
+* 25.3.5 GeoMetadata (Geospatial component)
+
+  see second edition
+
+-- Spec ISO/IEC 19775-1:2008 Edition 2 (ISO-IEC-FDIS-19775-1.2) --
+
+* 11.3.2 X3DComposedGeometryNode (Rendering component)
+
+  undefined constraint type "X3DColorObject" in the color field:
+  
+  SFNode [in,out] color NULL [X3DColorObject]
+
+  Maybe typo: X3DColorNode (11.3.1) instead of X3DColorObject.
+  In the previous edition of the specification there were no type restriction
+  on this field.
+
+* 15.4.2 Text (Text component)
+
+  typo in the fontStyle field:
+
+  SFNode   [in,out] fontStyle  NULL  [X3FontStyleNode]
+
+  X3DFontStyleNode should be instead of X3FontStyleNode.
+
+* 18.4.2 MovieTexture (Texturing component)
+
+  missing pitch field:
+
+  SFFloat  [in,out] pitch  1.0  (0,inf)
+
+  Field pitch is declared in X3DSoundSourceNode, but is not declared in the
+  MovieTexture node. MovieTexture node is derived from X3DSoundSourceNode.
+
+* 25.3.5 GeoMetadata (Geospatial component)
+
+  invalid constraint type "urn" in the data field:
+
+  MFNode [in,out] data [] [urn]
+
+* 25.3.8 GeoProximitySensor (Geospatial component)
+
+  missing center field:
+
+  SFVec3f [in,out] center    0 0 0 (-inf,inf)
+
+  Field center is declared in the node X3DEnvironmentalSensorNode but is not
+  declared in GeoProximitySensor node. GeoProximitySensor node is derived from
+  X3DEnvironmentalSensorNode.
+
+* 25.3.11 GeoViewpoint
+
+  fields orientation, retainUserOffsets, centerOfRotation:
+
+  Field orientation defined in the node X3DViewpointNode is different to the 
+  declaration in the GeoViewpoint node:
+
+    in X3DViewpointNode : SFRotation [in,out] orientation 0 0 1 0 # [-1,1],(-inf,inf)
+    in GeoViewpoint : SFRotation [] orientation 0 0 1 0 # (-inf,inf) or -1 1
+
+  Fields retainUserOffsets and centerOfRotation are declared in 
+  X3DViewpointNode, but are not declared in the GeoViewpoint node.
+
+  GeoViewpoint node is derived from X3DViewpointNode.
+
+* 27.4.9 NurbsSet (NURBS component)
+
+  undefined constraint type "NurbsSurface" in 
+  addGeometry, removeGeometry, geometry fields:
+
+  MFNode  [in]     addGeometry                [NurbsSurface]
+  MFNode  [in]     removeGeometry             [NurbsSurface]
+  MFNode  [in,out] geometry          []       [NurbsSurface]
+
+  Possible candidate is 27.3.2 X3DNurbsSurfaceGeometryNode:
+
+  "The X3DNurbsSurfaceGeometryNode represents the abstract geometry type for 
+   all types of NURBS surfaces"
+
+  However, only NurbsPatchSurface and NurbsTrimmedSurface are derived from
+  X3DNurbsSurfaceGeometryNode, NurbsSweptSurface and NurbsSwungSurface are 
+  derived from X3DParametricNode.
+
+  Alternatively create X3DNurbsSurfaceNode and inherit 
+  X3DNurbsSurfaceGeometryNode from it.
+
+* 32.3.1 X3DProductStructureChildNode (CAD geometry component)
+
+  missing metadata field:
+
+  SFNode [in,out] metadata NULL [X3DMetadataObject]
+
+  Field metadata is declared in the X3DNode, but is not declared in the
+  X3DProductStructureChildNode. X3DProductStructureChildNode is indirectly 
+  derived from X3DNode.
+
+* 33.4.1 ComposedTexture3D (Texturing3D component)
+
+  missing textureProperties field:
+
+  SFNode []       textureProperties NULL [TextureProperties]
+
+  Field textureProperties is declared in the X3DTexture3DNode, but is not
+  declared in ComposedTexture3D node. ComposedTexture3D is derived 
+  from X3DTexture3DNode.
+
+* 38.3.2 X3DPickSensorNode (Picking component)
+
+  undefined constraint type "X3DInlineNode" in the pickTarget field:
+ 
+  MFNode   [in,out] pickTarget [] [X3DGroupingNode|X3DShapeNode|X3DInlineNode]
+
+  Maybe Inline node should be derived from X3DInlineNode ?
+  Currently Inline node is derived from X3DChildNode, X3DBoundedObject, 
+  X3DUrlObject.
+
+  Additionally X3DPickSensorNode is not in the node index, instead 
+  there is a incorrect reference to the X3DPickingNode, which does not
+  exist.
+
+* 38.4.1 LinePickSensor (Picking component),
+  38.4.3 PrimitivePickSensor (Picking component),
+  38.4.5 VolumePickSensor (Picking component)
+
+  See 38.3.2 X3DPickSensorNode.
+
+  All nodes are derived from X3DPickSensorNode.
+
+  Note that PointPickSensor does not have undefined constraint type
+  "X3DInlineNode" in the pickTarget field.
+
+* 38.4.4 PrimitivePickSensor
+
+  Section is incorrectly named "PrimitivePicker" instead of PrimitivePickSensor
