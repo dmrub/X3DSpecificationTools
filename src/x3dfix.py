@@ -222,16 +222,11 @@ def main():
             ]
 
     for task in data:
-        containerFieldName, nodeNameList  = task
+        containerFieldName, nodeNameList = task
 
         for name in nodeNameList:
             n = ndb.getNode(name)
-            n.addField(nodedb.Field('SFString',
-                                    nodedb.INITIALIZE_ONLY,
-                                    'containerField', '"%s"' % \
-                                    containerFieldName, [],
-                                    nodedb.Annotations([
-                nodedb.Annotation('dontCreate', []) ]), None))
+            n.setContainerField(containerFieldName)
 
     # Set DEF and USE for all node types
     for n in ndb.getNodeList():
@@ -253,7 +248,7 @@ def main():
     # Add ROUTE node
     _n = nodedb.Node(type='ROUTE')
     #_n.setSuperTypes(['X3DChildNode'])
-    _n.setSpecFile('x3d_3.2_fixed.txt')
+    _n.setSpecFile('x3dfix.py')
     _n.setAbstract(False)
     _n.setComponentName('Core')
     # fields

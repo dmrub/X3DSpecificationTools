@@ -29,15 +29,18 @@ import re
 # field access types
 
 INITIALIZE_ONLY = 0
-INPUT_ONLY      = 1
-OUTPUT_ONLY     = 2
-INPUT_OUTPUT    = 3
+INPUT_ONLY = 1
+OUTPUT_ONLY = 2
+INPUT_OUTPUT = 3
+
 
 class NodeDBException(Exception):
     pass
 
+
 class ValueParsingException(NodeDBException):
     pass
+
 
 # field value parsers
 
@@ -55,7 +58,18 @@ def normalizeVRMLValue(value):
     value = value.strip()
     return value
 
-class NumberParser:
+
+def unquoteStringLiteral(s):
+    if s.startswith('"'):
+        s = json.loads(s)
+    return s
+
+
+def quoteStringLiteral(s):
+    return json.dumps(s)
+
+
+class NumberParser(object):
     """Converts strings with space separated numbers to number tuples"""
 
     def __init__(self, converter, numbersPerTuple, numTuples=1):
@@ -69,12 +83,12 @@ class NumberParser:
         div, mod = divmod(lpv, self.numbersPerTuple)
 
         if mod != 0:
-            raise ValueParsingException('incorrect count of numbers in %s' \
+            raise ValueParsingException('incorrect count of numbers in %s'
                                         % repr(value))
 
         if self.numTuples != -1 and div != self.numTuples:
-            raise ValueParsingException( \
-                'incorrect number of tuples (%i) in %s, should be %i' \
+            raise ValueParsingException(
+                'incorrect number of tuples (%i) in %s, should be %i'
                 % (div, repr(value), self.numTuples))
 
         # special case, single number and array of numbers
@@ -84,8 +98,8 @@ class NumberParser:
             else:
                 return parsedValue
 
-        r = [parsedValue[i:i+self.numbersPerTuple] \
-             for i in range(0,lpv,self.numbersPerTuple)]
+        r = [parsedValue[i:i + self.numbersPerTuple]
+             for i in range(0, lpv, self.numbersPerTuple)]
 
         # special case, single tuple
         if self.numTuples == 1:
@@ -93,8 +107,8 @@ class NumberParser:
 
         return r
 
-class BoolParser:
 
+class BoolParser:
     def __init__(self, parseArray=False):
         self.parseArray = parseArray
 
@@ -102,7 +116,7 @@ class BoolParser:
         value = normalizeVRMLValue(value).split()
 
         if not self.parseArray and len(value) != 1:
-            raise ValueParsingException('expected single value in %s' \
+            raise ValueParsingException('expected single value in %s'
                                         % repr(value))
 
         def toBool(v):
@@ -113,16 +127,20 @@ class BoolParser:
                 return False
             raise ValueParsingException('incorrect value %s' \
                                         % repr(v))
+
         value = [toBool(i) for i in value]
 
         if not self.parseArray:
             return value[0]
         return value
 
+
 SFSTRING_PATTERN = re.compile(r'''^[\s,]*"((?:[^"\\]|\\[\\"]?)*)"''')
+
 
 def fixSFString(s):
     return s.replace('\\\\', '\\').replace('\\"', '"')
+
 
 def sfStringParser(value):
     value = normalizeVRMLValue(value)
@@ -136,6 +154,7 @@ def sfStringParser(value):
         raise ValueParsingException('expected single string value in %s' %
                                     repr(value))
     return fixSFString(m.group(1))
+
 
 def mfStringParser(value):
     value = normalizeVRMLValue(value)
@@ -159,7 +178,9 @@ def mfStringParser(value):
 class NullNode(object):
     pass
 
+
 NULL_NODE = NullNode()
+
 
 def sfNodeParser(value):
     value = normalizeVRMLValue(value)
@@ -167,6 +188,7 @@ def sfNodeParser(value):
         return NULL_NODE
     raise ValueParsingException('Expected NULL value but found : %s' %
                                 repr(value))
+
 
 def mfNodeParser(value):
     value = normalizeVRMLValue(value).split()
@@ -178,6 +200,7 @@ def mfNodeParser(value):
             raise ValueParsingException('Expected NULL value but found : %s' %
                                         repr(i))
     return result
+
 
 sfBool1Parser = BoolParser(parseArray=False)
 mfBool1Parser = BoolParser(parseArray=True)
@@ -213,45 +236,45 @@ mfFloat16Parser = NumberParser(float, 16, -1)
 sfImageParser = sfInt3Parser
 mfImageParser = mfInt3Parser
 
-FIELD_PARSERS = {'SFBool'  : sfBool1Parser,
-                 'MFBool'  : mfBool1Parser,
-                 'SFColor' : sfFloat3Parser,
-                 'MFColor' : mfFloat3Parser,
-                 'SFColorRGBA' : sfFloat4Parser,
-                 'MFColorRGBA' : mfFloat4Parser,
-                 'SFDouble' : sfFloat1Parser,
-                 'MFDouble' : mfFloat1Parser,
-                 'SFFloat' : sfFloat1Parser,
-                 'MFFloat' : mfFloat1Parser,
-                 'SFImage' : sfImageParser,
-                 'MFImage' : mfImageParser,
-                 'SFInt32' : sfInt1Parser,
-                 'MFInt32' : mfInt1Parser,
-                 'SFNode' : sfNodeParser,
-                 'MFNode' : mfNodeParser,
-                 'SFRotation' : sfFloat4Parser,
-                 'MFRotation' : mfFloat4Parser,
-                 'SFString' : sfStringParser,
-                 'MFString' : mfStringParser,
-                 'SFTime' : sfFloat1Parser,
-                 'MFTime' : mfFloat1Parser,
-                 'SFVec2d' : sfFloat2Parser,
-                 'MFVec2d' : mfFloat2Parser,
-                 'SFVec2f' : sfFloat2Parser,
-                 'MFVec2f' : mfFloat2Parser,
-                 'SFVec3d' : sfFloat3Parser,
-                 'MFVec3d' : mfFloat3Parser,
-                 'SFVec3f' : sfFloat3Parser,
-                 'MFVec3f' : mfFloat3Parser,
-                 'SFVec4d' : sfFloat4Parser,
-                 'MFVec4d' : mfFloat4Parser,
-                 'SFVec4f' : sfFloat4Parser,
-                 'MFVec4f' : mfFloat4Parser,
-                 'SFMatrix4d' : sfFloat16Parser,
-                 'MFMatrix4d' : mfFloat16Parser,
-                 'SFMatrix4f' : sfFloat16Parser,
-                 'MFMatrix4f' : mfFloat16Parser,
-                 }
+FIELD_PARSERS = {'SFBool': sfBool1Parser,
+                 'MFBool': mfBool1Parser,
+                 'SFColor': sfFloat3Parser,
+                 'MFColor': mfFloat3Parser,
+                 'SFColorRGBA': sfFloat4Parser,
+                 'MFColorRGBA': mfFloat4Parser,
+                 'SFDouble': sfFloat1Parser,
+                 'MFDouble': mfFloat1Parser,
+                 'SFFloat': sfFloat1Parser,
+                 'MFFloat': mfFloat1Parser,
+                 'SFImage': sfImageParser,
+                 'MFImage': mfImageParser,
+                 'SFInt32': sfInt1Parser,
+                 'MFInt32': mfInt1Parser,
+                 'SFNode': sfNodeParser,
+                 'MFNode': mfNodeParser,
+                 'SFRotation': sfFloat4Parser,
+                 'MFRotation': mfFloat4Parser,
+                 'SFString': sfStringParser,
+                 'MFString': mfStringParser,
+                 'SFTime': sfFloat1Parser,
+                 'MFTime': mfFloat1Parser,
+                 'SFVec2d': sfFloat2Parser,
+                 'MFVec2d': mfFloat2Parser,
+                 'SFVec2f': sfFloat2Parser,
+                 'MFVec2f': mfFloat2Parser,
+                 'SFVec3d': sfFloat3Parser,
+                 'MFVec3d': mfFloat3Parser,
+                 'SFVec3f': sfFloat3Parser,
+                 'MFVec3f': mfFloat3Parser,
+                 'SFVec4d': sfFloat4Parser,
+                 'MFVec4d': mfFloat4Parser,
+                 'SFVec4f': sfFloat4Parser,
+                 'MFVec4f': mfFloat4Parser,
+                 'SFMatrix4d': sfFloat16Parser,
+                 'MFMatrix4d': mfFloat16Parser,
+                 'SFMatrix4f': sfFloat16Parser,
+                 'MFMatrix4f': mfFloat16Parser}
+
 
 def parseFieldValue(fieldType, fieldValue):
     global FIELD_PARSERS
@@ -259,6 +282,7 @@ def parseFieldValue(fieldType, fieldValue):
     if parser is None or fieldValue is None:
         return None
     return parser(fieldValue)
+
 
 def convertAccessTypeNameToId(name):
     n = name.replace(' ', '')
@@ -273,10 +297,11 @@ def convertAccessTypeNameToId(name):
     else:
         return -1
 
+
 def getObjectDict(obj):
     if getattr(obj, '__dict__', None) is None:
         return None
-    
+
     serializedFields = getattr(obj, '__serialize__', None)
     if serializedFields:
         objectDict = {}
@@ -287,11 +312,12 @@ def getObjectDict(obj):
         objectDict = obj.__dict__.copy()
     return objectDict
 
+
 def makeObjectRepr(obj):
     objectDict = getObjectDict(obj)
     if not objectDict:
         return repr(obj)
-    
+
     className = obj.__class__.__name__
 
     initValues = ', '.join(['%s=%s' % (kv[0], repr(kv[1]))
@@ -300,7 +326,6 @@ def makeObjectRepr(obj):
 
 
 class Annotation(object):
-
     __serialize__ = ['name', 'valList']
 
     def __init__(self, name, valList=None):
@@ -337,7 +362,7 @@ class Annotation(object):
         return h
 
     def __eq__(self, other):
-        return (self.name == other.name and self.valList == other.valList)
+        return self.name == other.name and self.valList == other.valList
 
     def __repr__(self):
         return 'Annotation(%s, %s)' % (repr(self.name), repr(self.valList))
@@ -351,11 +376,11 @@ class Annotation(object):
     def __str__(self):
         return self.toString()
 
-class Annotations(object):
 
+class Annotations(object):
     __serialize__ = ['annotDict']
 
-    def __init__(self, annList = []):
+    def __init__(self, annList=[]):
 
         self.annotDict = {}
         map(self.setAnnotation, annList)
@@ -389,7 +414,7 @@ class Annotations(object):
         return h
 
     def __eq__(self, other):
-        return (self.annotDict == other.annotDict)
+        return self.annotDict == other.annotDict
 
     def __repr__(self):
         s = '[ '
@@ -409,15 +434,14 @@ class Annotations(object):
     def __str__(self):
         return self.toString()
 
-class Field(object):
 
+class Field(object):
     __serialize__ = ['type', 'accessType', 'name', 'value', 'parsedValue',
                      'validValueTypes', 'info', 'annotations']
 
     accessTypeNames = ['[]', '[in]', '[out]', '[in,out]']
     accessTypeConsts = ['INITIALIZE_ONLY', 'INPUT_ONLY',
                         'OUTPUT_ONLY', 'INPUT_OUTPUT']
-
 
     def __init__(self, type, accessType, name, value=None,
                  validValueTypes=None, annotations=None, info=None):
@@ -539,28 +563,26 @@ class Field(object):
 
     def toString(self, typePadLen=0, accessTypeNamePadLen=0,
                  namePadLen=0, valuePadLen=0, validValueTypesPadLen=0):
-        info = self.info
-
         if self.validValueTypes:
-            vvt = self.getValidValueTypesStr().ljust(validValueTypesPadLen)+' '
+            vvt = self.getValidValueTypesStr().ljust(validValueTypesPadLen) + ' '
         else:
             vvt = ''
 
         info = vvt
         if self.info is not None:
-            info += '# '+self.info
+            info += '# ' + self.info
         elif self.annotations is not None:
-            info += '# '+self.getAnnotations().toString()
+            info += '# ' + self.getAnnotations().toString()
 
         if self.value:
             value = self.value.ljust(valuePadLen)
         else:
-            value = ' '*valuePadLen
-        
-        return self.type.ljust(typePadLen)+' '+\
-               self.getAccessTypeName().ljust(accessTypeNamePadLen)+' '+\
-               self.name.ljust(namePadLen)+' '+\
-               value+' '+info
+            value = ' ' * valuePadLen
+
+        return self.type.ljust(typePadLen) + ' ' + \
+               self.getAccessTypeName().ljust(accessTypeNamePadLen) + ' ' + \
+               self.name.ljust(namePadLen) + ' ' + \
+               value + ' ' + info
 
     def __hash__(self):
 
@@ -568,17 +590,17 @@ class Field(object):
         for vvt in self.validValueTypes:
             h = h ^ hash(vvt)
 
-        return (hash(self.type) ^ hash(self.accessType) ^ \
-                hash(self.value) ^ h ^ hash(self.annotations) ^ \
-                hash(self.info))
+        return hash(self.type) ^ hash(self.accessType) ^ \
+               hash(self.value) ^ h ^ hash(self.annotations) ^ \
+               hash(self.info)
 
     def __eq__(self, other):
-        return (self.type == other.type and \
-                self.accessType == other.accessType and \
-                self.value == other.value and \
-                self.validValueTypes == other.validValueTypes and \
-                self.annotations == other.annotations and \
-                self.info == other.info)
+        return self.type == other.type and \
+               self.accessType == other.accessType and \
+               self.value == other.value and \
+               self.validValueTypes == other.validValueTypes and \
+               self.annotations == other.annotations and \
+               self.info == other.info
 
     def __ne__(self, other):
         return not (self == other)
@@ -597,15 +619,15 @@ class Field(object):
         return s
 
     def toXML(self, xmlgen):
-        xmlgen.startElement('field', {'name' : self.name,
-                                      'type' : self.type,
-                                      'accessType' : self.getAccessTypeName()})
+        xmlgen.startElement('field', {'name': self.name,
+                                      'type': self.type,
+                                      'accessType': self.getAccessTypeName()})
 
         xmlgen.startElement('value', {})
         if self.value:
             xmlgen.characters(self.value)
         xmlgen.endElement('value')
-        
+
         xmlgen.startElement('validValueTypes', {})
         if self.validValueTypes:
             for t in self.validValueTypes:
@@ -613,16 +635,16 @@ class Field(object):
                 xmlgen.characters(t)
                 xmlgen.endElement('type')
         xmlgen.endElement('validValueTypes')
-        
+
         xmlgen.startElement('info', {})
         if self.info:
             xmlgen.characters(self.info)
         xmlgen.endElement('info')
-        
+
         xmlgen.endElement('field')
 
-class Node(object):
 
+class Node(object):
     __serialize__ = ['type', 'superTypes', 'fields', 'specFile',
                      'abstract', 'componentName',
                      'attributes']
@@ -641,7 +663,7 @@ class Node(object):
             for field in self.fields:
                 fieldName = field.getName()
                 if field in self.fieldMap:
-                    raise NodeDBException('In node %s field %s'     \
+                    raise NodeDBException('In node %s field %s' \
                                           ' was already declared' % \
                                           (self.type, field.getName()))
 
@@ -667,7 +689,7 @@ class Node(object):
     def __setstate__(self, state):
         self.__dict__ = state
         if self.__dict__.get('attributes') is None:
-            self.attributes =  {}
+            self.attributes = {}
         self.superNodes = None
         self.derivedNodes = None
 
@@ -776,6 +798,27 @@ class Node(object):
     def clearSuperNodes(self):
         self.superNodes = []
 
+    def getContainerField(self):
+        field = self.findField('containerField')
+        if field:
+            return unquoteStringLiteral(field.getValue())
+        else:
+            return None
+
+    def setContainerField(self, value):
+        field = self.findField('containerField')
+        if field:
+            field.setValue(quoteStringLiteral(value))
+        else:
+            field = Field('SFString',
+                          INITIALIZE_ONLY,
+                          'containerField', quoteStringLiteral(value), [],
+                          Annotations([
+                              Annotation('dontCreate', [])]), None)
+            self.addField(field)
+
+
+
     def diff(self, other, fullDiff=False):
         # check differences
         # - data unique to self
@@ -785,7 +828,7 @@ class Node(object):
         if self.type != other.type:
             result.append('- type %s' % repr(self.type))
             result.append('+ type %s' % repr(other.type))
-            
+
         if self.superTypes != other.superTypes:
             result.append('- superTypes %s' % repr(self.superTypes))
             result.append('+ superTypes %s' % repr(other.superTypes))
@@ -825,15 +868,15 @@ class Node(object):
                 result.append('- field %s' % str(field1))
                 result.append('+ field %s' % str(field2))
 
-        result.extend( [('- field %s' % str(self.findField(fn))) \
-                        for fn in removedFieldNames] )
-        result.extend( [('+ field %s' % str(other.findField(fn))) \
-                        for fn in addedFieldNames] )
-        
+        result.extend([('- field %s' % str(self.findField(fn))) \
+                       for fn in removedFieldNames])
+        result.extend([('+ field %s' % str(other.findField(fn))) \
+                       for fn in addedFieldNames])
+
         if len(result):
             result.insert(0, '@@ node %s @@' % self.type)
             result.append('')
-            
+
         return result
 
     def __eq__(self, other):
@@ -844,7 +887,7 @@ class Node(object):
 
         self_fields.sort(key=key_func)
         other_fields.sort(key=key_func)
-        
+
         return (self.type == other.type and \
                 self.superTypes == other.superTypes and \
                 self_fields == other_fields and \
@@ -856,7 +899,7 @@ class Node(object):
         return not (self == other)
 
     # convert to X3D specification format
-        
+
     def __str__(self):
         s = str(self.type)
         if len(self.superTypes) > 0:
@@ -868,14 +911,14 @@ class Node(object):
 
         s += '  attribute componentName "%s"\n' % self.componentName
 
-        for k,v in self.attributes.items():
+        for k, v in self.attributes.items():
             if v == True:
                 v = 'TRUE'
             elif v == False:
                 v = 'FALSE'
             elif isinstance(v, str):
                 v = "\"%s\"" % v
-            s += '  attribute ' + k + ' ' + str(v) +'\n'
+            s += '  attribute ' + k + ' ' + str(v) + '\n'
 
         def myLen(s):
             if s:
@@ -891,9 +934,9 @@ class Node(object):
             maxLen[2] = max(maxLen[2], myLen(field.name))
             maxLen[3] = max(maxLen[3], myLen(field.value))
             maxLen[4] = max(maxLen[4], myLen(field.getValidValueTypesStr()))
-        
+
         for field in self.fields:
-            s += '  ' + field.toString(*maxLen)+'\n'
+            s += '  ' + field.toString(*maxLen) + '\n'
         s += '}'
         return s
 
@@ -909,20 +952,19 @@ class Node(object):
         s += '%s.setComponentName(%s)\n' % (var, repr(self.componentName))
         s += '# fields\n'
         for field in self.fields:
-            s+= '%s.addField(%s)\n' % (var, repr(field))
+            s += '%s.addField(%s)\n' % (var, repr(field))
         return s
 
     def toXML(self, xmlgen):
-
 
         if self.abstract:
             abstract = 'true'
         else:
             abstract = 'false'
-        
-        xmlgen.startElement('node', {'type' : self.type,
-                                     'abstract' : abstract,
-                                     'componentName' : self.componentName})
+
+        xmlgen.startElement('node', {'type': self.type,
+                                     'abstract': abstract,
+                                     'componentName': self.componentName})
 
         xmlgen.startElement('fields', {})
         for field in self.fields:
@@ -935,8 +977,8 @@ class Node(object):
 
         xmlgen.endElement('node')
 
-class NodeDB(object):
 
+class NodeDB(object):
     __serialize__ = ['nodeList']
 
     def __init__(self, nodeList=None):
@@ -950,7 +992,7 @@ class NodeDB(object):
             for node in self.nodeList:
                 typeName = node.getType()
                 if typeName in self.nodeDict:
-                    raise NodeDBException('Node %s is already in the database'\
+                    raise NodeDBException('Node %s is already in the database' \
                                           % typeName)
                 self.nodeDict[typeName] = node
         else:
@@ -974,7 +1016,7 @@ class NodeDB(object):
 
     def getDerivedNodes(self, node):
         assert self.nodeDict[node.getType()] is node
-        
+
         derivedNodes = node.getDerivedNodes()
         if derivedNodes is None:
             self.updateHierarchy()
@@ -983,7 +1025,7 @@ class NodeDB(object):
 
     def getSuperNodes(self, node):
         assert self.nodeDict[node.getType()] is node
-        
+
         superNodes = node.getSuperNodes()
         if superNodes is None:
             self.updateHierarchy()
@@ -996,11 +1038,10 @@ class NodeDB(object):
     def addNode(self, node):
         typeName = node.getType()
         if typeName in self.nodeDict:
-            raise NodeDBException('Node %s is already in the database'\
+            raise NodeDBException('Node %s is already in the database' \
                                   % typeName)
         self.nodeList.append(node)
         self.nodeDict[typeName] = node
-
 
     def diff(self, other, fullDiff=False):
         # check differences
@@ -1024,8 +1065,8 @@ class NodeDB(object):
             node2 = other.getNode(nt)
             result.extend(node1.diff(node2, fullDiff))
 
-        result.extend( [('- node %s' % nt) for nt in removedNodeTypes] )
-        result.extend( [('+ node %s' % nt) for nt in addedNodeTypes] )
+        result.extend([('- node %s' % nt) for nt in removedNodeTypes])
+        result.extend([('+ node %s' % nt) for nt in addedNodeTypes])
 
         return result
 
@@ -1037,7 +1078,7 @@ class NodeDB(object):
 
         self_nodeList.sort(key=key_func)
         other_nodeList.sort(key=key_func)
-        
+
         return self_nodeList == other_nodeList
 
     def __ne__(self, other):
@@ -1075,10 +1116,10 @@ class NodeDB(object):
         if len(result) == 0:
             result = [node]
         return result
-            
+
     def updateHierarchy(self):
         self.rootNodes = []
-        
+
         for node in self.nodeList:
             node.clearSuperNodes()
             node.clearDerivedNodes()
@@ -1106,7 +1147,7 @@ class NodeDB(object):
                                                            field.getName())
                 for n in declInNodes:
                     field.addDeclarationNode(n)
-            
+
     def save(self, filename):
         # check if the file object is provided instead of string
         if getattr(filename, 'write', None) is not None:
@@ -1124,8 +1165,9 @@ class NodeDB(object):
 
     def saveAsPythonCode(self, filename):
         fd = open(filename, 'w')
-        fd.write(repr(self)+'\n')
+        fd.write(repr(self) + '\n')
         fd.close()
+
 
 def loadFromPythonCode(filename):
     fd = open(filename, 'r')
@@ -1135,11 +1177,11 @@ def loadFromPythonCode(filename):
     ndb.updateHierarchy()
     return ndb
 
-def load(filename):
 
+def load(filename):
     # check if the file object is provided instead of string
     if (getattr(filename, 'read', None) is not None and \
-        getattr(filename, 'readline', None) is not None):
+                    getattr(filename, 'readline', None) is not None):
         fd = filename
         closeFile = False
     else:
@@ -1151,30 +1193,31 @@ def load(filename):
     finally:
         if closeFile:
             fd.close()
-        
+
     ndb.updateHierarchy()
-        
+
     return ndb
 
-class NodeDBEncoder(json.JSONEncoder):
 
+class NodeDBEncoder(json.JSONEncoder):
     def default(self, obj):
         if (isinstance(obj, Field) or \
-            isinstance(obj, Node)  or \
-            isinstance(obj, NodeDB) or \
-            isinstance(obj, Annotation) or \
-            isinstance(obj, Annotations) or \
-            isinstance(obj, NullNode)):
-
+                    isinstance(obj, Node) or \
+                    isinstance(obj, NodeDB) or \
+                    isinstance(obj, Annotation) or \
+                    isinstance(obj, Annotations) or \
+                    isinstance(obj, NullNode)):
             objectDict = getObjectDict(obj)
             objectDict['__class__'] = obj.__class__.__name__
 
             return objectDict
-            
+
         return json.JSONEncoder.default(self, obj)
+
 
 def toJSON(ndb):
     return json.dumps(ndb, sort_keys=True, indent=4, cls=NodeDBEncoder)
+
 
 def toXML(v, xmlgen=None):
     if not xmlgen:
