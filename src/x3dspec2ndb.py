@@ -84,7 +84,7 @@ class NodeParsingException(ParsingException):
     def __str__(self):
         msg = 'NodeParsingException: '+str(self.message)+'.'
         if self.nodeClass:
-            msg += ' node: %s, ' % self.nodeClass
+            msg += ' node: %s,' % self.nodeClass
         return msg+(' specFile: "%s", nodeSpec: "%s"' % (self.specFile.strip(),
                                                          self.nodeSpec.strip()))
 
@@ -728,7 +728,7 @@ class X3DSpecParser:
                 componentName = componentName[:-5]
             elif bn.endswith('.htm'):
                 componentName = componentName[:-4]
-                
+
         self.componentName = componentName
 
         # find and process all node declarations
@@ -738,7 +738,7 @@ class X3DSpecParser:
             if m:
                 preClassName = m.group(1) or m.group(2) or m.group(3)
                 ignoreTag = (preClassName not in (None,'','node'))
-                
+
                 startPos = m.end()
                 i = startPos
                 # find tag end
@@ -752,7 +752,7 @@ class X3DSpecParser:
 
                 if ignoreTag:
                     continue
-                    
+
                 self.nodeSpec = nodeSpec
                 self.fixRawNodeSpec()
                 try:
@@ -835,7 +835,7 @@ class X3DSpecParser:
     def processNodeSpec(self):
         if not self.nodeSpec:
             return
-        
+
         # parse name
         m = SPEC_PATTERN.match(self.nodeSpec)
         nodeClass = None
@@ -845,13 +845,13 @@ class X3DSpecParser:
             nodeBody = m.group(3).strip()
 
             debug("Node %s" % nodeClass)
-            
+
             # remove spaces from parent classes list and split it
             if superTypes:
                 superTypes = superTypes.replace(' ', '').split(',')
             else:
                 superTypes = []
-            
+
             node = Node(nodeClass)
             node.setSpecFile(self.specFile)
             node.setComponentName(self.componentName)
@@ -889,7 +889,7 @@ class X3DSpecParser:
             nodeName = tokens[0]
         else:
             nodeName = None
-        
+
         self.sub('<[^>]*>', '')  # internal HTML tags
         self.replace('&#8734;','inf')
         self.replace('&#960;','pi')
@@ -906,6 +906,13 @@ class X3DSpecParser:
         self.replace('\r', '') # CRs
 
         # special node and field fixing rules
+        changed = self.replace('[in,put]', '[in,out]')
+        if changed:
+            self.parsingError(NodeParsingException(
+                'Replaced "[in,put]" with "[in,out]"',
+                nodeName, self.specFile,
+                self.getNodeSpec()))
+
         changed = self.replace('SFBoolean', 'SFBool   ')
         if changed:
             self.parsingError(NodeParsingException(
@@ -924,8 +931,8 @@ class X3DSpecParser:
         self.sub('\s*fieldType\s\[.*', '')
         self.sub('\s*MF<type>.*','')
         self.sub('\s*\[S\|M\]F<type>.*','')
-        
-        if nodeName == 'X3DViewpointNode':
+
+        if nodeName in ('X3DViewpointNode', 'X3DEnvironmentalSensorNode'):
             self.sub('\s*SFVec3f/d.*','')
         elif nodeName.startswith('P['):
             self.ignoreNodeSpec()
@@ -1023,7 +1030,7 @@ def main():
     printErrors = False
     textSpec = False
     global DEBUG_MODE
-    
+
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
@@ -1074,7 +1081,7 @@ def main():
     parser.finishParsing()
 
     nodeDB = parser.getNodeDB()
-    
+
     if pickleNodeDB:
         pickle.dump(nodeDB, sys.stdout)
     else:
